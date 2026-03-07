@@ -7,7 +7,7 @@ import {
   type TextChannel,
   type ThreadChannel,
 } from "discord.js"
-import type { Platform, IncomingMessage } from "../types.js"
+import type { IncomingMessage, Platform } from "../types.js"
 import { parseRepoFromTopic } from "./parse-topic.js"
 
 /**
@@ -34,9 +34,7 @@ export class DiscordPlatform implements Platform {
 
   async start(): Promise<void> {
     this.client.on("messageCreate", (message) => this.handleMessage(message))
-    this.client.on("channelCreate", (channel) =>
-      this.handleChannelCreate(channel),
-    )
+    this.client.on("channelCreate", (channel) => this.handleChannelCreate(channel))
     await this.client.login(this.token)
     console.log(`Discord bot logged in as ${this.client.user?.tag}`)
   }
@@ -71,24 +69,22 @@ export class DiscordPlatform implements Platform {
   }
 
   private handleMessage(message: Message): void {
-    if (message.author.bot) return
+    const botUser = this.client.user
+    if (!botUser) return
+    if (message.author.id === botUser.id) return
     if (!this.handler) return
 
     // Check if bot is mentioned or message is in a thread
-    const isMention = message.mentions.has(this.client.user!.id)
+    const isMention = message.mentions.has(botUser.id)
     const isInThread = message.channel.isThread()
 
     if (!isMention && !isInThread) return
 
     // Category filter
     if (this.categoryId) {
-      const parentChannel = isInThread
-        ? (message.channel as ThreadChannel).parent
-        : message.channel
+      const parentChannel = isInThread ? (message.channel as ThreadChannel).parent : message.channel
       const categoryMatch =
-        parentChannel &&
-        "parentId" in parentChannel &&
-        parentChannel.parentId === this.categoryId
+        parentChannel && "parentId" in parentChannel && parentChannel.parentId === this.categoryId
       if (!categoryMatch) return
     }
 
@@ -100,9 +96,7 @@ export class DiscordPlatform implements Platform {
     const repoHint = parseRepoFromTopic(topic)
 
     // Remove bot mention from content
-    const content = message.content
-      .replace(new RegExp(`<@!?${this.client.user!.id}>`, "g"), "")
-      .trim()
+    const content = message.content.replace(new RegExp(`<@!?${botUser.id}>`, "g"), "").trim()
 
     const incoming: IncomingMessage = {
       platformName: "discord",
@@ -126,15 +120,16 @@ export class DiscordPlatform implements Platform {
     const repoHint = parseRepoFromTopic(textChannel.topic)
 
     if (!repoHint) {
+      const botUser = this.client.user
       await textChannel.send(
         [
-          `**AI Code Agent Hub** へようこそ!`,
-          ``,
-          `このチャンネルで AI エージェントを使うには:`,
-          `1. チャンネルトピックに \`repo:owner/name\` を設定`,
-          `2. <@${this.client.user!.id}> にメンションして会話を開始`,
-          ``,
-          `例: トピックに \`repo:myorg/my-app\` と設定 → \`@${this.client.user!.username} バグを修正して\``,
+          "**AI Code Agent Hub** へようこそ!",
+          "",
+          "このチャンネルで AI エージェントを使うには:",
+          "1. チャンネルトピックに `repo:owner/name` を設定",
+          `2. <@${botUser?.id}> にメンションして会話を開始`,
+          "",
+          `例: トピックに \`repo:myorg/my-app\` と設定 → \`@${botUser?.username} バグを修正して\``,
         ].join("\n"),
       )
     }

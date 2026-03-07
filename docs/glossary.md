@@ -15,12 +15,13 @@
 |---------|---------|------|
 | `Router` | `src/router.ts` | Platform からのメッセージを受け取り、Agent Pool / Session Pool を介して Agent にルーティングする中継層。Platform と Agent の具象を知らない |
 | `Portal` | `src/portal.ts` | WebUI 用の HTTP サーバ。リポジトリ一覧 API と、各リポジトリの opencode web へのリバースプロキシを提供する |
-| `AgentPool` | `src/agent-pool.ts` | リポジトリ名から Agent プロセスを取得 (なければ起動) するプール。アイドルタイムアウトによるプロセス回収も担う |
+| `AgentPool` | `src/agent-pool.ts` | リポジトリ名から Agent プロセスを取得 (なければ起動) するプール。初回アクセス時にリポジトリを自動 clone し、アイドルタイムアウトによるプロセス回収も担う |
 | `SessionPool` | `src/session-pool.ts` | スレッド ID → セッション ID のマッピングを管理。セッションの作成・復帰を担う (タイムアウトによるプロセス回収は AgentPool の責務) |
 | `DiscordPlatform` | `src/platforms/discord.ts` | Discord Gateway (WebSocket) を介してメッセージを送受信する Platform 実装 |
 | `SlackPlatform` | `src/platforms/slack.ts` | Slack Socket Mode (WebSocket) を介してメッセージを送受信する Platform 実装 |
 | `OpenCodeAgent` | `src/agents/opencode.ts` | `@opencode-ai/sdk` の `createOpencodeServer()` でプロセスを起動する Agent 実装 |
-| `ClaudeCodeAgent` | `src/agents/claude-code.ts` | Claude Code プロセスを起動する Agent 実装 |
+| `ClaudeCodeAgent` | `src/agents/claude-code.ts` | Claude Code CLI (`claude`) をサブプロセスとして起動する Agent 実装。repoPath 単位で `ClaudeCodeAgentProcess` を管理する |
+| `ClaudeCodeAgentProcess` | `src/agents/claude-code.ts` | Claude Code CLI の AgentProcess 実装。`prompt()` 毎に `claude -p --session-id --output-format stream-json` を spawn し、stdout の JSON Lines からテキストを yield する |
 
 ## テストダブル
 
@@ -41,12 +42,16 @@
 | Portal | ブラウザ向けの入口。リポジトリ一覧 + opencode web へのリバースプロキシ (~50行) |
 | Agent Pool | 複数リポジトリの Agent プロセスを管理する共有層。Router と Portal の両方から参照される |
 | Platform Adapter | 外部チャットプロトコルを IncomingMessage に変換するアダプター。WebUI は opencode web が直接担うため Adapter 不要 |
+| cloneInFlight | 同一リポジトリへの並行 clone リクエストをデデュプリケーションするための `Map<repoName, Promise<void>>`。clone 完了/失敗後にエントリが削除される |
 
 ## ユーティリティ関数
 
 | シンボル | 定義場所 | 意味 |
 |---------|---------|------|
 | `parseRepoFromTopic` | `src/platforms/parse-topic.ts` | チャンネルトピック文字列から `repo:owner/name` を抽出し、`owner/name` を返すパーサー。Discord/Slack の両 Platform から共有利用 |
+| `AgentPool.ensureCloned` | `src/agent-pool.ts` | repoPath が存在しなければ GitHub から `git clone` を実行する。同一リポジトリへの重複 clone を Promise キャッシュで防止する |
+| `AgentPool.buildCloneUrl` | `src/agent-pool.ts` | (static) repoName と任意の GITHUB_TOKEN から clone URL を生成する。トークンありなら `https://{token}@github.com/{repo}.git` |
+| `AgentPool.pathExists` | `src/agent-pool.ts` | (static) 指定パスの存在チェック。`fs.access` のラッパー。テストでモック可能にするために static メソッドとして公開 |
 
 ## 環境変数
 

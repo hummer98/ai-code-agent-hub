@@ -23,11 +23,13 @@ services:
       - ${HUB_REPOS_PATH:-./.hub/repos}:/repos
       - ${HUB_DATA_PATH:-./.hub/data}:/root/.local/share/opencode
       - ${HUB_CONFIG_PATH:-./.hub/config}:/root/.config/opencode
+    env_file:
+      - .env
     restart: unless-stopped
     deploy:
       resources:
         limits:
-          memory: 4G
+          memory: 4G             # NFR-002: 3-5 リポ同時で 4GB 以内
         reservations:
           memory: 1G
 ```
@@ -40,16 +42,23 @@ seed の初期構想 (`multi-claude-code-webui.md`) では opencode / discord-bo
 
 ## Dockerfile
 
+マルチステージビルドで最終イメージサイズを削減。
+
 ```dockerfile
-FROM node:22-slim
-RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
-RUN npm install -g opencode
-RUN npx ocx add kdco/worktree --from https://registry.kdco.dev
+FROM node:22-slim AS builder
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm install
 COPY src/ src/
-RUN npm run build
+COPY tsconfig.json ./
+RUN npx tsc
+
+FROM node:22-slim
+RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm install --omit=dev
+COPY --from=builder /app/dist dist/
 EXPOSE 3000
 EXPOSE 4097-4200
 CMD ["node", "dist/index.js"]
@@ -107,6 +116,29 @@ HUB_REPOS_PATH=./.hub/repos
 HUB_DATA_PATH=./.hub/data
 HUB_CONFIG_PATH=./.hub/config
 ```
+
+## デプロイ状況
+
+QNAP NAS (TS-932PX) の Container Station 上で Docker Compose により稼働中。
+
+| 項目 | 値 |
+|------|-----|
+| ホスト | QNAP TS-932PX |
+| ランタイム | Container Station (Docker Compose) |
+| Portal ポート | 3000 |
+| Agent ポート範囲 | 4097-4200 |
+| Volume ベースパス | `/share/Container/ai-code-agent-hub/` |
+| メモリ上限 | 4GB (deploy.resources.limits.memory) |
+
+### Volume mount 一覧
+
+| ホスト側パス | コンテナ側パス | 内容 | 永続化対象 |
+|-------------|--------------|------|-----------|
+| `${HUB_REPOS_PATH}` | `/repos` | 各リポジトリの clone | Yes (NFR-006) |
+| `${HUB_DATA_PATH}` | `/root/.local/share/opencode` | セッション履歴 | Yes (NFR-006) |
+| `${HUB_CONFIG_PATH}` | `/root/.config/opencode` | 設定・プラグイン | Yes (NFR-006) |
+
+コンテナ再起動時もこれらの bind mount によりデータが保持される (NFR-006)。
 
 ## メモリ要件
 

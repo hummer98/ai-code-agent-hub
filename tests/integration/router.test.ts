@@ -1,7 +1,10 @@
-import { describe, test, expect, beforeEach } from "vitest"
-import { Router } from "../../src/router.js"
+import { beforeEach, describe, expect, test, vi } from "vitest"
 import { AgentPool } from "../../src/agent-pool.js"
-import { TestPlatform, MockAgent } from "./helpers.js"
+import { Router } from "../../src/router.js"
+import { MockAgent, TestPlatform } from "./helpers.js"
+
+// Skip clone in router integration tests — repo is assumed to exist
+vi.spyOn(AgentPool, "pathExists").mockResolvedValue(true)
 
 describe("Router integration", () => {
   let platform: TestPlatform

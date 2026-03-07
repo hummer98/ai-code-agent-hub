@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach } from "vitest"
+import { beforeEach, describe, expect, test } from "vitest"
 import { SessionPool } from "../../src/session-pool.js"
 import type { AgentProcess } from "../../src/types.js"
 
@@ -29,11 +29,7 @@ describe("SessionPool", () => {
   })
 
   test("getOrCreate creates new session", async () => {
-    const sessionId = await pool.getOrCreate(
-      "thread-1",
-      "org/repo",
-      mockProcess,
-    )
+    const sessionId = await pool.getOrCreate("thread-1", "org/repo", mockProcess)
     expect(sessionId).toBe("session-1")
     expect(pool.size).toBe(1)
   })

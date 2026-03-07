@@ -1,4 +1,4 @@
-import { describe, test, expect } from "vitest"
+import { describe, expect, test } from "vitest"
 import { parseRepoFromTopic } from "../../src/platforms/parse-topic.js"
 
 describe("parseRepoFromTopic", () => {
@@ -7,15 +7,15 @@ describe("parseRepoFromTopic", () => {
   })
 
   test("extracts repo with extra metadata", () => {
-    expect(
-      parseRepoFromTopic("repo:hummer98/my-blog | branch:main | Next.js"),
-    ).toBe("hummer98/my-blog")
+    expect(parseRepoFromTopic("repo:hummer98/my-blog | branch:main | Next.js")).toBe(
+      "hummer98/my-blog",
+    )
   })
 
   test("extracts repo with surrounding text", () => {
-    expect(
-      parseRepoFromTopic("This channel is for repo:org/project discussion"),
-    ).toBe("org/project")
+    expect(parseRepoFromTopic("This channel is for repo:org/project discussion")).toBe(
+      "org/project",
+    )
   })
 
   test("returns undefined for topic without repo", () => {
@@ -35,8 +35,6 @@ describe("parseRepoFromTopic", () => {
   })
 
   test("extracts first repo when multiple present", () => {
-    expect(parseRepoFromTopic("repo:first/one repo:second/two")).toBe(
-      "first/one",
-    )
+    expect(parseRepoFromTopic("repo:first/one repo:second/two")).toBe("first/one")
   })
 })

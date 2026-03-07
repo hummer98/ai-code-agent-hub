@@ -1,6 +1,9 @@
-import { describe, test, expect, beforeEach, afterEach, vi } from "vitest"
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest"
 import { AgentPool } from "../../src/agent-pool.js"
 import type { Agent, AgentProcess } from "../../src/types.js"
+
+// Skip clone in all AgentPool port tests — repo is assumed to exist
+vi.spyOn(AgentPool, "pathExists").mockResolvedValue(true)
 
 function createMockAgentProcess(isAlive = true): AgentProcess {
   let nextId = 1

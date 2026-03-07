@@ -48,6 +48,45 @@ Map<repoName, {
   → リポジトリ削除 (任意)
 ```
 
+## リポジトリ自動 clone (FR-011)
+
+`getOrStart(repoName)` の中で Agent プロセス起動前に `ensureCloned()` を呼び出す。
+
+### フロー
+
+```
+getOrStart(repoName)
+  → ensureCloned(repoName, repoPath)
+    → pathExists(repoPath) で存在チェック
+      → 存在する → skip
+      → 存在しない → cloneRepo()
+        → git clone {url} {repoPath}
+  → agent.startProcess(repoPath)
+```
+
+### clone URL 生成
+
+`AgentPool.buildCloneUrl(repoName, token?)` で生成。
+
+- GITHUB_TOKEN なし: `https://github.com/{repoName}.git`
+- GITHUB_TOKEN あり: `https://{token}@github.com/{repoName}.git`
+
+### 重複 clone 防止
+
+`cloneInFlight: Map<string, Promise<void>>` で同一リポジトリへの並行 clone をデデュプリケーションする。2 つ目以降のリクエストは既存の Promise を await して完了を待つ。clone 完了/失敗後に Map から削除される。
+
+### エラー処理
+
+- clone 失敗時は `Failed to clone {repoName}: {message}` 形式のエラーをスローする
+- エラーメッセージ中の GITHUB_TOKEN は `***` に置換してログ漏洩を防止する
+
+### 環境変数
+
+| 変数 | 用途 | デフォルト |
+|------|------|-----------|
+| `GITHUB_TOKEN` | プライベートリポジトリ clone 用 PAT | (なし = public のみ) |
+| `HUB_REPOS_PATH` | clone 先ベースディレクトリ | `/repos` |
+
 ## ポート割当
 
 - 範囲: 4097-4200
@@ -63,9 +102,10 @@ Map<repoName, {
 ```
 Router  --->  AgentPool.getOrStart(repoName)
 Portal  --->  AgentPool.getOrStart(repoName)
+              AgentPool --> ensureCloned() --> git clone (execFile)
               AgentPool --> Agent.startProcess(repoPath)
 ```
 
 ## 見積もり
 
-~100行
+~180行

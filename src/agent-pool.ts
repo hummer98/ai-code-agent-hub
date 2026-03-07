@@ -1,4 +1,9 @@
+import { execFile } from "node:child_process"
+import { access } from "node:fs/promises"
+import { promisify } from "node:util"
 import type { Agent, AgentProcess } from "./types.js"
+
+const execFileAsync = promisify(execFile)
 
 interface PoolEntry {
   process: AgentProcess
@@ -11,6 +16,7 @@ export interface AgentPoolOptions {
   portRangeEnd?: number
   idleTimeoutMs?: number
   reposPath?: string
+  githubToken?: string
 }
 
 /**
@@ -24,7 +30,9 @@ export class AgentPool {
   private readonly portRangeEnd: number
   private readonly idleTimeoutMs: number
   private readonly reposPath: string
+  private readonly githubToken: string | undefined
   private cleanupTimer: ReturnType<typeof setInterval> | undefined
+  private cloneInFlight = new Map<string, Promise<void>>()
 
   constructor(
     private agent: Agent,
@@ -35,6 +43,7 @@ export class AgentPool {
     this.portRangeEnd = options.portRangeEnd ?? start + 103
     this.idleTimeoutMs = options.idleTimeoutMs ?? 30 * 60 * 1000
     this.reposPath = options.reposPath ?? "/repos"
+    this.githubToken = options.githubToken
   }
 
   start(): void {
@@ -43,7 +52,7 @@ export class AgentPool {
 
   async getOrStart(repoName: string): Promise<AgentProcess> {
     const existing = this.entries.get(repoName)
-    if (existing && existing.process.alive()) {
+    if (existing?.process.alive()) {
       existing.lastAccess = new Date()
       return existing.process
     }
@@ -55,6 +64,7 @@ export class AgentPool {
 
     const port = this.allocatePort()
     const repoPath = `${this.reposPath}/${repoName}`
+    await this.ensureCloned(repoName, repoPath)
     const process = await this.agent.startProcess(repoPath)
 
     this.entries.set(repoName, {
@@ -96,9 +106,59 @@ export class AgentPool {
     return this.entries.size
   }
 
+  /**
+   * repoPath が存在しなければ GitHub から git clone を実行する。
+   * 同一リポジトリへの重複 clone を Promise キャッシュで防止する。
+   */
+  async ensureCloned(repoName: string, repoPath: string): Promise<void> {
+    if (await AgentPool.pathExists(repoPath)) return
+
+    const inflight = this.cloneInFlight.get(repoName)
+    if (inflight) {
+      await inflight
+      return
+    }
+
+    const clonePromise = this.cloneRepo(repoName, repoPath)
+    this.cloneInFlight.set(repoName, clonePromise)
+    try {
+      await clonePromise
+    } finally {
+      this.cloneInFlight.delete(repoName)
+    }
+  }
+
+  private async cloneRepo(repoName: string, repoPath: string): Promise<void> {
+    const url = AgentPool.buildCloneUrl(repoName, this.githubToken)
+    try {
+      await execFileAsync("git", ["clone", url, repoPath])
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      throw new Error(
+        `Failed to clone ${repoName}: ${message.replaceAll(this.githubToken ?? "", "***")}`,
+      )
+    }
+  }
+
+  static buildCloneUrl(repoName: string, token?: string): string {
+    if (token) {
+      return `https://${token}@github.com/${repoName}.git`
+    }
+    return `https://github.com/${repoName}.git`
+  }
+
+  static async pathExists(path: string): Promise<boolean> {
+    try {
+      await access(path)
+      return true
+    } catch {
+      return false
+    }
+  }
+
   private allocatePort(): number {
     if (this.freedPorts.length > 0) {
-      return this.freedPorts.pop()!
+      return this.freedPorts.pop() as number
     }
     if (this.nextPort > this.portRangeEnd) {
       throw new Error("Port range exhausted")

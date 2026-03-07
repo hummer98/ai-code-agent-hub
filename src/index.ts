@@ -1,7 +1,7 @@
 import { AgentPool } from "./agent-pool.js"
-import { Router } from "./router.js"
-import { Portal } from "./portal.js"
 import { OpenCodeAgent } from "./agents/opencode.js"
+import { Portal } from "./portal.js"
+import { Router } from "./router.js"
 import type { Platform } from "./types.js"
 
 async function main() {
@@ -10,28 +10,19 @@ async function main() {
   // Discord Platform (optional)
   if (process.env.DISCORD_TOKEN) {
     const { DiscordPlatform } = await import("./platforms/discord.js")
-    platforms.push(
-      new DiscordPlatform(
-        process.env.DISCORD_TOKEN,
-        process.env.DISCORD_CATEGORY_ID,
-      ),
-    )
+    platforms.push(new DiscordPlatform(process.env.DISCORD_TOKEN, process.env.DISCORD_CATEGORY_ID))
   }
 
   // Slack Platform (optional)
   if (process.env.SLACK_BOT_TOKEN && process.env.SLACK_APP_TOKEN) {
     const { SlackPlatform } = await import("./platforms/slack.js")
-    platforms.push(
-      new SlackPlatform(
-        process.env.SLACK_BOT_TOKEN,
-        process.env.SLACK_APP_TOKEN,
-      ),
-    )
+    platforms.push(new SlackPlatform(process.env.SLACK_BOT_TOKEN, process.env.SLACK_APP_TOKEN))
   }
 
   const agent = new OpenCodeAgent()
   const agentPool = new AgentPool(agent, {
     reposPath: process.env.HUB_REPOS_PATH ?? "/repos",
+    githubToken: process.env.GITHUB_TOKEN,
   })
 
   const router = new Router(platforms, agentPool)

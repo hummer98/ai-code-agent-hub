@@ -1,5 +1,5 @@
 import { App } from "@slack/bolt"
-import type { Platform, IncomingMessage } from "../types.js"
+import type { IncomingMessage, Platform } from "../types.js"
 import { parseRepoFromTopic } from "./parse-topic.js"
 
 /**
@@ -11,10 +11,7 @@ export class SlackPlatform implements Platform {
   private app: App
   private handler?: (msg: IncomingMessage) => void
 
-  constructor(
-    botToken: string,
-    appToken: string,
-  ) {
+  constructor(botToken: string, appToken: string) {
     this.app = new App({
       token: botToken,
       appToken,
@@ -38,9 +35,7 @@ export class SlackPlatform implements Platform {
       }
 
       // Remove bot mention from content
-      const content = (event.text ?? "")
-        .replace(/<@[A-Z0-9]+>/g, "")
-        .trim()
+      const content = (event.text ?? "").replace(/<@[A-Z0-9]+>/g, "").trim()
 
       const incoming: IncomingMessage = {
         platformName: "slack",

@@ -1,9 +1,4 @@
-import type {
-  Platform,
-  Agent,
-  AgentProcess,
-  IncomingMessage,
-} from "../../src/types.js"
+import type { Agent, AgentProcess, IncomingMessage, Platform } from "../../src/types.js"
 
 export class MockAgentProcess implements AgentProcess {
   sessions = new Map<string, { cwd?: string }>()
@@ -17,10 +12,7 @@ export class MockAgentProcess implements AgentProcess {
 
   async resumeSession(_sessionId: string): Promise<void> {}
 
-  async *prompt(
-    _sessionId: string,
-    content: string,
-  ): AsyncIterable<string> {
+  async *prompt(_sessionId: string, content: string): AsyncIterable<string> {
     yield `echo: ${content}`
   }
 

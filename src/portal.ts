@@ -1,6 +1,6 @@
+import { serve } from "@hono/node-server"
 import { Hono } from "hono"
 import { basicAuth } from "hono/basic-auth"
-import { serve } from "@hono/node-server"
 import type { AgentPool } from "./agent-pool.js"
 
 /**

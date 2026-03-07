@@ -85,6 +85,16 @@ Dockerfile で `npx ocx add kdco/worktree` によりインストール済み。
 
 詳細は seed ドキュメント `docs/seeds/multi-claude-code-webui.md` の Worktree セクションを参照。
 
+## インストラクションファイル
+
+OpenCode は起動時にカレントディレクトリから上方向へ以下のファイルを自動探索し、LLM コンテキストに含める。
+
+1. `AGENTS.md` / `CLAUDE.md` (ローカル、上方向に走査)
+2. `~/.config/opencode/AGENTS.md` (グローバル)
+3. `~/.claude/CLAUDE.md` (Claude Code 互換)
+
+リポジトリに `CLAUDE.md` があれば追加設定なしで読み込まれるため、プロジェクト固有の指示は `CLAUDE.md` に記述すればよい。
+
 ## SDK
 
 `@opencode-ai/sdk` を使用してプログラマティックに制御する。

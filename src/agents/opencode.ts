@@ -83,9 +83,7 @@ export class OpenCodeAgent implements Agent {
       createOpencodeServer = sdk.createOpencodeServer
       createOpencodeClient = sdk.createOpencodeClient
     } catch {
-      throw new Error(
-        "@opencode-ai/sdk is not installed. Run: npm install @opencode-ai/sdk",
-      )
+      throw new Error("@opencode-ai/sdk is not installed. Run: npm install @opencode-ai/sdk")
     }
 
     const server = await createOpencodeServer({ hostname: "127.0.0.1" })

@@ -1,6 +1,9 @@
-import { describe, test, expect, beforeEach, afterEach } from "vitest"
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest"
 import { AgentPool } from "../../src/agent-pool.js"
 import { MockAgent } from "./helpers.js"
+
+// Skip clone in integration tests — repo is assumed to exist
+vi.spyOn(AgentPool, "pathExists").mockResolvedValue(true)
 
 describe("AgentPool integration", () => {
   let agent: MockAgent

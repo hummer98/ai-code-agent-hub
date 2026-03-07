@@ -1,6 +1,8 @@
 import {
+  ChannelType,
   Client,
   GatewayIntentBits,
+  type GuildChannel,
   type Message,
   type TextChannel,
   type ThreadChannel,
@@ -32,6 +34,9 @@ export class DiscordPlatform implements Platform {
 
   async start(): Promise<void> {
     this.client.on("messageCreate", (message) => this.handleMessage(message))
+    this.client.on("channelCreate", (channel) =>
+      this.handleChannelCreate(channel),
+    )
     await this.client.login(this.token)
     console.log(`Discord bot logged in as ${this.client.user?.tag}`)
   }
@@ -110,6 +115,29 @@ export class DiscordPlatform implements Platform {
     }
 
     this.handler(incoming)
+  }
+
+  private async handleChannelCreate(channel: GuildChannel): Promise<void> {
+    if (channel.type !== ChannelType.GuildText) return
+
+    if (this.categoryId && channel.parentId !== this.categoryId) return
+
+    const textChannel = channel as TextChannel
+    const repoHint = parseRepoFromTopic(textChannel.topic)
+
+    if (!repoHint) {
+      await textChannel.send(
+        [
+          `**AI Code Agent Hub** へようこそ!`,
+          ``,
+          `このチャンネルで AI エージェントを使うには:`,
+          `1. チャンネルトピックに \`repo:owner/name\` を設定`,
+          `2. <@${this.client.user!.id}> にメンションして会話を開始`,
+          ``,
+          `例: トピックに \`repo:myorg/my-app\` と設定 → \`@${this.client.user!.username} バグを修正して\``,
+        ].join("\n"),
+      )
+    }
   }
 }
 

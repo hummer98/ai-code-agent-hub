@@ -16,6 +16,7 @@
 | FR-010 | Docker 一発起動 | 高 | 未着手 | `docker compose up -d` で全サービスが起動する (→ NFR-001, NFR-005) | [infrastructure](../design/infrastructure.md) |
 | FR-011 | リポジトリ自動 clone | 高 | 未着手 | 初回アクセス時に GitHub から自動 clone する。GITHUB_TOKEN でプライベートリポジトリにも対応する | [agent-pool](../design/agent-pool.md) |
 | FR-012 | ストリーミング応答 | 高 | 実装中 | Agent の応答を SSE でストリーミング受信し、Discord/Slack に逐次返信する | [router](../design/router.md), [opencode](../design/agents/opencode.md) |
+| FR-013 | チャンネルナビゲーション | 中 | 実装中 | 新規チャンネル作成時にセットアップ案内メッセージを自動投稿する | [discord](../design/platforms/discord.md) |
 
 ## 非機能要求 (NFR)
 

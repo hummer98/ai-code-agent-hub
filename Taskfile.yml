@@ -1,0 +1,56 @@
+version: '3'
+
+vars:
+  SESSION_NAME: ai-code-agent-hub
+
+tasks:
+  claude:
+    desc: tmux セッション内で Claude Code を起動する
+    cmds:
+      - |
+        if tmux has-session -t {{.SESSION_NAME}} 2>/dev/null; then
+          echo "Session '{{.SESSION_NAME}}' already exists. Attaching..."
+          tmux attach-session -t {{.SESSION_NAME}}
+        else
+          tmux new-session -s {{.SESSION_NAME}} -d 'claude'
+          tmux attach-session -t {{.SESSION_NAME}}
+        fi
+
+  claude:new:
+    desc: 新しい tmux ウィンドウで Claude Code を起動する (既存セッションに追加)
+    cmds:
+      - |
+        if tmux has-session -t {{.SESSION_NAME}} 2>/dev/null; then
+          tmux new-window -t {{.SESSION_NAME}} 'claude'
+          tmux attach-session -t {{.SESSION_NAME}}
+        else
+          tmux new-session -s {{.SESSION_NAME}} -d 'claude'
+          tmux attach-session -t {{.SESSION_NAME}}
+        fi
+
+  claude:detached:
+    desc: バックグラウンドで Claude Code の tmux セッションを作成する (アタッチしない)
+    cmds:
+      - |
+        if tmux has-session -t {{.SESSION_NAME}} 2>/dev/null; then
+          tmux new-window -t {{.SESSION_NAME}} 'claude'
+          echo "New window added to session '{{.SESSION_NAME}}'"
+        else
+          tmux new-session -s {{.SESSION_NAME}} -d 'claude'
+          echo "Session '{{.SESSION_NAME}}' created in background"
+        fi
+
+  claude:attach:
+    desc: 既存の tmux セッションにアタッチする
+    cmds:
+      - tmux attach-session -t {{.SESSION_NAME}}
+
+  claude:list:
+    desc: tmux セッション一覧を表示する
+    cmds:
+      - tmux list-sessions 2>/dev/null || echo "No active tmux sessions"
+
+  claude:kill:
+    desc: tmux セッションを終了する
+    cmds:
+      - tmux kill-session -t {{.SESSION_NAME}}

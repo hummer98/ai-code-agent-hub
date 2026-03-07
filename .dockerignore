@@ -1,0 +1,8 @@
+node_modules
+dist
+.hub
+.claude
+.git
+*.md
+tests
+docs

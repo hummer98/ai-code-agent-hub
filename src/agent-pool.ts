@@ -134,9 +134,8 @@ export class AgentPool {
       await execFileAsync("git", ["clone", url, repoPath])
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err)
-      throw new Error(
-        `Failed to clone ${repoName}: ${message.replaceAll(this.githubToken ?? "", "***")}`,
-      )
+      const sanitized = this.githubToken ? message.replaceAll(this.githubToken, "***") : message
+      throw new Error(`Failed to clone ${repoName}: ${sanitized}`)
     }
   }
 

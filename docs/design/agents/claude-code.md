@@ -45,6 +45,9 @@ claude -p "<prompt>" --session-id <uuid> --output-format stream-json
 - 以下の type を持つ行からテキストを抽出:
   - `{ type: "assistant", subtype: "text", content_block: { text: "..." } }`
   - `{ type: "content_block_delta", content_block: { text: "..." } }`
+  - `{ type: "result", result: "...", is_error: false }` (フォールバック: 上記でテキストが得られなかった場合)
+- `is_error: true` の result イベントは Error として throw する
+- stderr を収集し、出力が空の場合は stderr またはプロセス終了コードからエラーを構築する
 
 ## 設計判断
 

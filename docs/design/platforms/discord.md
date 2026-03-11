@@ -60,7 +60,7 @@ Slash Commands ではなく `@bot` メンション + スレッド返信を採用
 
 - `@bot` へのリプライ → 自動的にスレッドを作成
 - `startThread()`: `message.startThread({ name })` で Discord スレッドを作成
-- `reply()`: スレッド内にメッセージを送信
+- `reply()`: スレッド内にメッセージを送信 (空文字列の場合は送信をスキップ)
 
 ## チャンネルナビゲーション (FR-013)
 

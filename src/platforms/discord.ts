@@ -53,6 +53,9 @@ export class DiscordPlatform implements Platform {
       ? ((await this.client.channels.fetch(msg.threadId)) as ThreadChannel)
       : (raw.channel as TextChannel)
 
+    // 空メッセージは Discord API がエラーを返すため送信しない
+    if (!text.trim()) return
+
     // Discord has 2000 char limit per message
     const chunks = splitMessage(text, 2000)
     for (const chunk of chunks) {

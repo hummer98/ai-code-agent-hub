@@ -14,6 +14,10 @@ interface StreamJsonLine {
     type: string
     text?: string
   }
+  /** result イベントの最終テキスト */
+  result?: string
+  /** result イベントのエラーフラグ */
+  is_error?: boolean
   [key: string]: unknown
 }
 
@@ -61,6 +65,15 @@ export class ClaudeCodeAgentProcess implements AgentProcess {
     }
     const rl = createInterface({ input: child.stdout })
 
+    // stderr を収集してエラー時のメッセージに使う
+    const stderrChunks: string[] = []
+    child.stderr?.on("data", (chunk: Buffer) => {
+      stderrChunks.push(chunk.toString())
+    })
+
+    let hasOutput = false
+    let resultText: string | undefined
+
     try {
       for await (const line of rl) {
         if (!line.trim()) continue
@@ -74,6 +87,7 @@ export class ClaudeCodeAgentProcess implements AgentProcess {
             parsed.subtype === "text" &&
             typeof parsed.content_block?.text === "string"
           ) {
+            hasOutput = true
             yield parsed.content_block.text
           }
 
@@ -82,9 +96,22 @@ export class ClaudeCodeAgentProcess implements AgentProcess {
             parsed.type === "content_block_delta" &&
             typeof parsed.content_block?.text === "string"
           ) {
+            hasOutput = true
             yield parsed.content_block.text
           }
-        } catch {
+
+          // result イベント: ストリーミング中のテキストブロックがない場合のフォールバック
+          if (parsed.type === "result" && typeof parsed.result === "string") {
+            if (parsed.is_error) {
+              throw new Error(parsed.result)
+            }
+            resultText = parsed.result
+          }
+        } catch (e) {
+          // result.is_error で throw した Error は再送出
+          if (e instanceof Error && !(e instanceof SyntaxError)) {
+            throw e
+          }
           // JSON パースに失敗した行は無視
         }
       }
@@ -96,6 +123,21 @@ export class ClaudeCodeAgentProcess implements AgentProcess {
           child.on("close", resolve)
         })
       }
+    }
+
+    // ストリーミング中にテキストが yield されなかった場合、result のテキストを使う
+    if (!hasOutput && resultText) {
+      yield resultText
+    }
+
+    // 何も出力されなかった場合、stderr やプロセス終了コードからエラーを構築
+    if (!hasOutput && !resultText) {
+      const stderr = stderrChunks.join("").trim()
+      const exitCode = child.exitCode ?? -1
+      if (stderr) {
+        throw new Error(stderr)
+      }
+      throw new Error(`claude プロセスが出力なしで終了しました (exit code: ${exitCode})`)
     }
   }
 

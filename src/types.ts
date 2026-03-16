@@ -33,6 +33,19 @@ export interface Agent {
 }
 
 /**
+ * Platform.reply() に渡すリッチ応答。
+ * テキスト + オプションでセレクトメニューやボタンを含む。
+ */
+export interface ReplyPayload {
+  text: string
+  select?: {
+    id: string
+    placeholder: string
+    options: Array<{ label: string; value: string; description?: string; selected?: boolean }>
+  }
+}
+
+/**
  * UI 層の抽象。外部チャットプラットフォームとの接続を担う。
  */
 export interface Platform {
@@ -40,6 +53,6 @@ export interface Platform {
   start(): Promise<void>
   stop(): void
   onMessage(handler: (msg: IncomingMessage) => void): void
-  reply(msg: IncomingMessage, text: string): Promise<void>
+  reply(msg: IncomingMessage, content: string | ReplyPayload): Promise<void>
   startThread(msg: IncomingMessage, name: string): Promise<string>
 }

@@ -1,5 +1,5 @@
 import { App } from "@slack/bolt"
-import type { IncomingMessage, Platform } from "../types.js"
+import type { IncomingMessage, Platform, ReplyPayload } from "../types.js"
 import { parseRepoFromTopic } from "./parse-topic.js"
 
 /**
@@ -98,7 +98,8 @@ export class SlackPlatform implements Platform {
     this.handler = handler
   }
 
-  async reply(msg: IncomingMessage, text: string): Promise<void> {
+  async reply(msg: IncomingMessage, content: string | ReplyPayload): Promise<void> {
+    const text = typeof content === "string" ? content : content.text
     await this.app.client.chat.postMessage({
       channel: msg.channelId,
       text,

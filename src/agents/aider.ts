@@ -116,15 +116,20 @@ class AiderAgentProcess implements AgentProcess {
       }
       case "models": {
         const current = this.model
-        yield [
-          "**利用可能なモデル:**",
-          ...RECOMMENDED_MODELS.map(
-            (m) => `${m.id === current ? "→" : "　"} \`${m.id}\` — ${m.description}`,
-          ),
-          "",
-          `現在: \`${current}\``,
-          "変更: `!model <id>` (openrouter/ プレフィックスは省略可)",
-        ].join("\n")
+        const payload = {
+          text: `現在のモデル: \`${current}\``,
+          select: {
+            id: "model_select",
+            placeholder: "モデルを選択...",
+            options: RECOMMENDED_MODELS.map((m) => ({
+              label: m.id.replace("openrouter/", ""),
+              value: m.id,
+              description: m.description,
+              selected: m.id === current,
+            })),
+          },
+        }
+        yield `<!--reply:${JSON.stringify(payload)}-->`
         return
       }
       case "help": {

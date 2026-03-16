@@ -1,4 +1,4 @@
-import type { Agent, AgentProcess, IncomingMessage, Platform } from "../../src/types.js"
+import type { Agent, AgentProcess, IncomingMessage, Platform, ReplyPayload } from "../../src/types.js"
 
 export class MockAgentProcess implements AgentProcess {
   sessions = new Map<string, { cwd?: string }>()
@@ -43,7 +43,7 @@ export class MockAgent implements Agent {
 export class TestPlatform implements Platform {
   name = "test"
   private handler!: (msg: IncomingMessage) => void
-  replies: Array<{ msg: IncomingMessage; text: string }> = []
+  replies: Array<{ msg: IncomingMessage; text: string | ReplyPayload }> = []
   threads: Array<{ msg: IncomingMessage; name: string; threadId: string }> = []
   private threadCounter = 0
 
@@ -54,8 +54,8 @@ export class TestPlatform implements Platform {
     this.handler = handler
   }
 
-  async reply(msg: IncomingMessage, text: string): Promise<void> {
-    this.replies.push({ msg, text })
+  async reply(msg: IncomingMessage, content: string | ReplyPayload): Promise<void> {
+    this.replies.push({ msg, text: content })
   }
 
   async startThread(msg: IncomingMessage, name: string): Promise<string> {

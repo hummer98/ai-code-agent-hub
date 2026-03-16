@@ -1,6 +1,6 @@
 import type { AgentPool } from "./agent-pool.js"
 import { SessionPool } from "./session-pool.js"
-import type { IncomingMessage, Platform } from "./types.js"
+import type { IncomingMessage, Platform, ReplyPayload } from "./types.js"
 
 /**
  * Platform からのメッセージを Agent にルーティングする中継層。
@@ -42,6 +42,18 @@ export class Router {
       let buffer = ""
       for await (const chunk of agentProcess.prompt(sessionId, msg.content)) {
         buffer += chunk
+      }
+
+      // Agent が <!--reply:JSON--> 形式で返した場合、ReplyPayload としてパース
+      const replyMatch = buffer.match(/^<!--reply:(.+)-->$/)
+      if (replyMatch) {
+        try {
+          const payload: ReplyPayload = JSON.parse(replyMatch[1])
+          await platform.reply(msg, payload)
+          return
+        } catch {
+          // パース失敗時はテキストとしてフォールバック
+        }
       }
 
       await platform.reply(msg, buffer)

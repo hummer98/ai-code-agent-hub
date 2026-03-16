@@ -6,8 +6,6 @@ services:
       - "4097-4200:4097-4200"
     volumes:
       - ${HUB_REPOS_PATH:-./.hub/repos}:/repos
-      - ${HUB_DATA_PATH:-./.hub/data}:/root/.local/share/opencode
-      - ${HUB_CONFIG_PATH:-./.hub/config}:/root/.config/opencode
     env_file:
       - .env
     restart: unless-stopped

@@ -9,7 +9,7 @@
 | FR-003 | Discord 連携 | 高 | 完了 | Discord チャンネルトピックの `repo:` からリポジトリを解決し、スレッドでセッションを管理できる | [discord](../design/platforms/discord.md) |
 | FR-004 | Slack 連携 | 中 | 実装中 | Socket Mode で接続し、Discord と同じセッションモデルで動作する | [slack](../design/platforms/slack.md) |
 | FR-005 | WebUI (Portal) | 高 | 完了 | リポジトリ一覧を表示し、各リポジトリの opencode web にリバースプロキシする | [portal](../design/portal.md) |
-| FR-006 | マルチエージェント | 中 | 完了 | Agent インターフェースにより OpenCode / Claude Code を差し替え可能 | [opencode](../design/agents/opencode.md), [claude-code](../design/agents/claude-code.md) |
+| FR-006 | マルチエージェント | 中 | 完了 | Agent インターフェースにより Aider / OpenCode / Claude Code を差し替え可能 | [aider](../design/agents/aider.md), [opencode](../design/agents/opencode.md), [claude-code](../design/agents/claude-code.md) |
 | FR-007 | Agent プロセス管理 | 高 | 完了 | リポジトリ毎に Agent プロセスを起動/停止し、ポートを動的に割り当てる | [agent-pool](../design/agent-pool.md) |
 | FR-008 | セッションライフサイクル | 高 | 完了 | 作成→利用→休止(アイドルタイムアウト)→復帰→終了 のライフサイクルを管理する | [session-pool](../design/session-pool.md) |
 | FR-009 | Flutter App | 低 | 未着手 | Portal REST API + opencode REST/SSE API でモバイルから操作できる | (未作成) |

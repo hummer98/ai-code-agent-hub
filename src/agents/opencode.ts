@@ -1,77 +1,134 @@
-import type { OpencodeClient, createOpencodeServer } from "@opencode-ai/sdk"
+import { type ChildProcess, spawn } from "node:child_process"
+import { randomUUID } from "node:crypto"
+import { createInterface } from "node:readline"
 import type { Agent, AgentProcess } from "../types.js"
 
-type OpencodeServer = Awaited<ReturnType<typeof createOpencodeServer>>
+/**
+ * OpenCode CLI の JSON 出力の型。
+ * `-f json` で得られるレスポンスの構造。
+ */
+interface OpenCodeJsonResponse {
+  content?: string
+  parts?: Array<{ type: string; text?: string }>
+  [key: string]: unknown
+}
 
 /**
- * OpenCode Agent プロセスのラッパー。
- * SDK の OpencodeClient を介してセッションを操作する。
+ * OpenCode CLI をサブプロセスとして起動する AgentProcess 実装。
+ * SDK のサーバーモードではなく、`-p` (non-interactive prompt) モードで毎回呼び出す。
  */
 class OpenCodeAgentProcess implements AgentProcess {
-  constructor(
-    private client: OpencodeClient,
-    private server: OpencodeServer,
-  ) {}
+  private sessions = new Set<string>()
+  private _alive = true
+
+  constructor(private readonly cwd: string) {}
 
   async createSession(_opts?: { cwd?: string }): Promise<string> {
-    const result = await this.client.session.create()
-    if (result.error) {
-      throw new Error("Failed to create opencode session")
-    }
-    return result.data.id
+    const sessionId = randomUUID()
+    this.sessions.add(sessionId)
+    return sessionId
   }
 
-  async resumeSession(_sessionId: string): Promise<void> {
-    // opencode はセッションをサーバー側で永続化するため no-op
+  async resumeSession(sessionId: string): Promise<void> {
+    this.sessions.add(sessionId)
   }
 
-  async *prompt(sessionId: string, content: string): AsyncIterable<string> {
-    const result = await this.client.session.prompt({
-      path: { id: sessionId },
-      body: { parts: [{ type: "text", text: content }] },
+  async *prompt(_sessionId: string, content: string): AsyncIterable<string> {
+    const args = ["-p", content, "-c", this.cwd, "-f", "json", "-q"]
+
+    const child = spawn("opencode", args, {
+      stdio: ["ignore", "pipe", "pipe"],
+      env: { ...process.env },
     })
-    if (result.error) {
-      throw new Error("Failed to prompt opencode session")
+
+    yield* this.readOutput(child)
+  }
+
+  /**
+   * child process の stdout を読み取り、テキスト応答を yield する。
+   */
+  private async *readOutput(child: ChildProcess): AsyncIterable<string> {
+    if (!child.stdout) {
+      return
     }
-    for (const part of result.data.parts) {
-      if (part.type === "text") {
-        yield part.text
+
+    let output = ""
+    const rl = createInterface({ input: child.stdout })
+
+    try {
+      for await (const line of rl) {
+        output += line
+      }
+    } finally {
+      rl.close()
+      if (child.exitCode === null) {
+        await new Promise<void>((resolve) => {
+          child.on("close", resolve)
+        })
+      }
+    }
+
+    // JSON 出力をパースしてテキストを抽出
+    if (output.trim()) {
+      try {
+        const parsed: OpenCodeJsonResponse = JSON.parse(output)
+        if (typeof parsed.content === "string") {
+          yield parsed.content
+        } else if (parsed.parts) {
+          for (const part of parsed.parts) {
+            if (part.type === "text" && typeof part.text === "string") {
+              yield part.text
+            }
+          }
+        } else {
+          // フォールバック: JSON をそのまま返す
+          yield output.trim()
+        }
+      } catch {
+        // JSON パース失敗時はプレーンテキストとして返す
+        yield output.trim()
       }
     }
   }
 
   destroySession(sessionId: string): void {
-    this.client.session.delete({ path: { id: sessionId } }).catch(() => {})
+    this.sessions.delete(sessionId)
   }
 
   alive(): boolean {
-    return this.server.url !== ""
+    return this._alive
+  }
+
+  shutdown(): void {
+    this._alive = false
+    this.sessions.clear()
   }
 }
 
 /**
- * @opencode-ai/sdk の createOpencodeServer/createOpencodeClient で
- * Agent プロセスを起動・管理する Agent 実装。
+ * OpenCode CLI (`opencode`) を使って Agent プロセスを起動・管理する Agent 実装。
+ * 1 repoPath に対して 1 つの OpenCodeAgentProcess を保持する。
  */
 export class OpenCodeAgent implements Agent {
   name = "opencode"
-  private servers = new Map<string, OpencodeServer>()
+  private processes = new Map<string, OpenCodeAgentProcess>()
 
   async startProcess(repoPath: string): Promise<AgentProcess> {
-    const { createOpencodeServer, createOpencodeClient } = await import("@opencode-ai/sdk")
+    const existing = this.processes.get(repoPath)
+    if (existing?.alive()) {
+      return existing
+    }
 
-    const server = await createOpencodeServer({ hostname: "127.0.0.1" })
-    const client = createOpencodeClient({ baseUrl: server.url })
-
-    this.servers.set(repoPath, server)
-    return new OpenCodeAgentProcess(client, server)
+    const agentProcess = new OpenCodeAgentProcess(repoPath)
+    this.processes.set(repoPath, agentProcess)
+    return agentProcess
   }
 
   stopProcess(repoPath: string): void {
-    const server = this.servers.get(repoPath)
-    if (server) {
-      server.close()
-      this.servers.delete(repoPath)
+    const agentProcess = this.processes.get(repoPath)
+    if (agentProcess) {
+      agentProcess.shutdown()
+      this.processes.delete(repoPath)
     }
   }
 }

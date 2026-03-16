@@ -9,57 +9,44 @@
 
 ## 責務
 
-`@opencode-ai/sdk` の `createOpencodeServer()` で Agent プロセスを起動・管理する Agent 実装。
+OpenCode CLI (`opencode`) を `-p` (non-interactive prompt) モードで起動する Agent 実装。
+
+## 現状
+
+**QNAP ARM64 (TS-932PX) では動作不可。** 将来のために実装を保持している。
+
+### ARM64 互換性問題
+
+1. **npm バイナリ** (`opencode-ai`): Bun/JSC が 64K ページサイズ kernel (PAGE_SIZE=65536) で Abort
+2. **Go ソースビルド**: ncruces/go-sqlite3 → wazero (WebAssembly ランタイム) が古い kernel (4.x) で:
+   - wazero v1.9.0: SIGILL (`getisar0` — CPU feature detection)
+   - wazero v1.11.0: SIGILL 修正済みだが `sqlite3: disk I/O error` が残存
+3. **SDK サーバーモード** (`createOpencodeServer`): 最新 CLI で `serve` サブコマンド廃止
+
+### 設計変更履歴
+
+1. 初期: SDK (`@opencode-ai/sdk`) の `createOpencodeServer()` でサーバーモード起動
+2. SDK → CLI 移行: 最新 CLI で `serve` が廃止されたため `-p` (one-shot prompt) モードに変更
+3. SDK 依存を削除、`@opencode-ai/sdk` は不要に
 
 ## プロセス起動
 
 ```typescript
-import { createOpencodeServer, createOpencodeClient } from "@opencode-ai/sdk"
-
-// サーバー起動 (child_process.spawn 不要)
-const server = await createOpencodeServer({ port, hostname: "127.0.0.1" })
-const client = createOpencodeClient({ baseUrl: server.url })
-
-// 停止
-server.close()
+// prompt() の度に opencode CLI を one-shot 起動
+const child = spawn("opencode", [
+  "-p", content, "-c", repoPath, "-f", "json", "-q"
+])
 ```
-
-### 設計変更理由
-
-seed では `child_process.spawn("opencode", ["serve", ...])` でプロセスを起動する想定だったが、
-SDK 調査 (v1.2.21) で `createOpencodeServer()` が提供されていることが判明。
-プロセス管理がよりクリーンになり、死活チェックも簡素化されるため SDK API を採用する。
 
 ## AgentProcess 実装
 
-`@opencode-ai/sdk` の `OpencodeClient` を介してセッションを操作する。
-
-| メソッド (AgentProcess) | SDK 呼び出し | 説明 |
-|------------------------|-------------|------|
-| `createSession()` | `client.session.create()` | 新規セッション作成 |
-| `prompt(id, content)` | `client.session.prompt({ path: { id }, body: { content } })` | プロンプト送信 |
-| `destroySession(id)` | `client.session.delete({ path: { id } })` | セッション破棄 |
-| `alive()` | サーバーインスタンスの状態チェック | `createOpencodeServer` の返り値で管理 |
-
-### resumeSession について
-
-SDK (v1.2.21) に `resume` API は存在しない。opencode のセッションはサーバー側で永続化されるため、
-既存の sessionId で `prompt()` を呼べば会話は継続される。AgentProcess インターフェースの
-`resumeSession()` は no-op (何もしない) で実装する。
-
-## ストリーミング応答 (FR-012)
-
-`prompt()` は `AsyncIterable<string>` を返す。内部的には SDK の `client.session.prompt()` + `client.global.event()` (SSE) を組み合わせる。
-
-```typescript
-async *prompt(sessionId: string, content: string): AsyncIterable<string> {
-  // 1. client.global.event() で SSE ストリームを購読
-  // 2. client.session.prompt({ path: { id: sessionId }, body: { content } })
-  // 3. SSE イベントからセッション対象のメッセージを yield
-}
-```
-
-Router はこのイテレータを消費してチャンク単位で Platform に中継する。
+| メソッド (AgentProcess) | 実装 | 説明 |
+|------------------------|------|------|
+| `createSession()` | UUID 生成 | セッション ID を発行 |
+| `prompt(id, content)` | `opencode -p content -c cwd -f json -q` spawn | JSON 出力からテキスト抽出 |
+| `resumeSession(id)` | no-op | セッション状態は維持されない |
+| `destroySession(id)` | sessions Set から削除 | プロセスは毎回 one-shot |
+| `alive()` | 内部フラグ | `shutdown()` で false に |
 
 ## Worktree セッション分離 (NFR-008)
 

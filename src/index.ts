@@ -1,8 +1,25 @@
 import { AgentPool } from "./agent-pool.js"
-import { OpenCodeAgent } from "./agents/opencode.js"
 import { Portal } from "./portal.js"
 import { Router } from "./router.js"
-import type { Platform } from "./types.js"
+import type { Agent, Platform } from "./types.js"
+
+async function createAgent(): Promise<Agent> {
+  const agentName = process.env.AGENT ?? "aider"
+  switch (agentName) {
+    case "opencode": {
+      const { OpenCodeAgent } = await import("./agents/opencode.js")
+      return new OpenCodeAgent()
+    }
+    case "claude-code": {
+      const { ClaudeCodeAgent } = await import("./agents/claude-code.js")
+      return new ClaudeCodeAgent()
+    }
+    default: {
+      const { AiderAgent } = await import("./agents/aider.js")
+      return new AiderAgent()
+    }
+  }
+}
 
 async function main() {
   const platforms: Platform[] = []
@@ -19,7 +36,8 @@ async function main() {
     platforms.push(new SlackPlatform(process.env.SLACK_BOT_TOKEN, process.env.SLACK_APP_TOKEN))
   }
 
-  const agent = new OpenCodeAgent()
+  const agent = await createAgent()
+  console.log(`Agent: ${agent.name}`)
   const agentPool = new AgentPool(agent, {
     reposPath: process.env.HUB_REPOS_PATH ?? "/repos",
     githubToken: process.env.GITHUB_TOKEN,

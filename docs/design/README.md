@@ -20,7 +20,7 @@
                        │
 ┌──────────────────────▼──────────────────────────┐
 │  Agent 層 (AI エンジン)                           │
-│  OpenCode / Claude Code                          │
+│  Aider / OpenCode / Claude Code                  │
 └─────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────┐
@@ -40,8 +40,9 @@
 | Session Pool | [session-pool.md](session-pool.md) | スレッド/タブ → セッション ID マッピング |
 | Discord Platform | [platforms/discord.md](platforms/discord.md) | Discord Gateway → IncomingMessage 変換 |
 | Slack Platform | [platforms/slack.md](platforms/slack.md) | Slack Socket Mode → IncomingMessage 変換 |
-| OpenCode Agent | [agents/opencode.md](agents/opencode.md) | opencode serve プロセスの管理 |
-| Claude Code Agent | [agents/claude-code.md](agents/claude-code.md) | Claude Code プロセスの管理 |
+| Aider Agent | [agents/aider.md](agents/aider.md) | Aider CLI プロセスの管理 (デフォルト) |
+| OpenCode Agent | [agents/opencode.md](agents/opencode.md) | OpenCode CLI プロセスの管理 (ARM64 非対応) |
+| Claude Code Agent | [agents/claude-code.md](agents/claude-code.md) | Claude Code CLI プロセスの管理 |
 | Infrastructure | [infrastructure.md](infrastructure.md) | Docker Compose / Dockerfile / Volume / 環境変数 / メモリ要件 |
 | Testing | [testing.md](testing.md) | テストピラミッド / テストダブル (TestPlatform, MockAgent) / CI 戦略 |
 

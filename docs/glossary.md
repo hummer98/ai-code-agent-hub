@@ -19,7 +19,9 @@
 | `SessionPool` | `src/session-pool.ts` | スレッド ID → セッション ID のマッピングを管理。セッションの作成・復帰を担う (タイムアウトによるプロセス回収は AgentPool の責務) |
 | `DiscordPlatform` | `src/platforms/discord.ts` | Discord Gateway (WebSocket) を介してメッセージを送受信する Platform 実装 |
 | `SlackPlatform` | `src/platforms/slack.ts` | Slack Socket Mode (WebSocket) を介してメッセージを送受信する Platform 実装 |
-| `OpenCodeAgent` | `src/agents/opencode.ts` | `@opencode-ai/sdk` の `createOpencodeServer()` でプロセスを起動する Agent 実装 |
+| `AiderAgent` | `src/agents/aider.ts` | Aider CLI (`aider`) を `--message` モードで起動する Agent 実装 (デフォルト)。repoPath 単位で `AiderAgentProcess` を管理する |
+| `AiderAgentProcess` | `src/agents/aider.ts` | Aider CLI の AgentProcess 実装。`prompt()` 毎に `aider --message --yes --no-auto-commits` を spawn し、stdout からテキストを yield する。`--restore-chat-history` で会話コンテキストを維持する |
+| `OpenCodeAgent` | `src/agents/opencode.ts` | OpenCode CLI (`opencode`) を `-p` モードで起動する Agent 実装。ARM64 QNAP では動作不可 (将来用) |
 | `ClaudeCodeAgent` | `src/agents/claude-code.ts` | Claude Code CLI (`claude`) をサブプロセスとして起動する Agent 実装。repoPath 単位で `ClaudeCodeAgentProcess` を管理する |
 | `ClaudeCodeAgentProcess` | `src/agents/claude-code.ts` | Claude Code CLI の AgentProcess 実装。`prompt()` 毎に `claude -p --session-id --output-format stream-json` を spawn し、stdout の JSON Lines からテキストを yield する |
 
@@ -57,16 +59,18 @@
 
 | シンボル | 意味 |
 |---------|------|
+| `AGENT` | 使用する Agent 名 (`aider`, `opencode`, `claude-code`。デフォルト: `aider`) |
+| `AIDER_MODEL` | Aider で使用するモデル (デフォルト: `openrouter/anthropic/claude-sonnet-4`) |
+| `OPENROUTER_API_KEY` | OpenRouter API キー (Aider Agent 使用時) |
 | `DISCORD_TOKEN` | Discord Bot トークン |
 | `DISCORD_CATEGORY_ID` | 監視対象の Discord カテゴリ ID |
 | `SLACK_BOT_TOKEN` | Slack Bot User OAuth Token (`xoxb-`) |
 | `SLACK_APP_TOKEN` | Slack App-Level Token (`xapp-`) — Socket Mode に必要 |
+| `ANTHROPIC_API_KEY` | Anthropic API キー (Claude Code Agent 使用時) |
 | `PORTAL_PASSWORD` | Portal の HTTP Basic Auth パスワード |
 | `GITHUB_TOKEN` | GitHub Personal Access Token (プライベートリポジトリ clone 用) |
 | `GITHUB_OWNER` | デフォルトのリポジトリオーナー |
 | `HUB_REPOS_PATH` | repos Volume のホスト側パス |
-| `HUB_DATA_PATH` | data Volume のホスト側パス |
-| `HUB_CONFIG_PATH` | config Volume のホスト側パス |
 | `E2E_TEST_BOT_TOKEN` | E2E テスト用 Discord Bot トークン |
 | `E2E_TARGET_BOT_ID` | E2E テスト対象 Bot のユーザ ID |
 | `E2E_DISCORD_CHANNEL_ID` | E2E テスト用 Discord チャンネル ID |

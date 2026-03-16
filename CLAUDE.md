@@ -9,7 +9,7 @@ QNAP NAS (Container Station) 上の Docker Compose で一発起動。
 ## 技術スタック
 
 - ランタイム: Node.js 22 / TypeScript
-- AI エンジン: OpenCode (差し替え可能)
+- AI エンジン: Aider (デフォルト) / OpenCode / Claude Code (AGENT 環境変数で切り替え)
 - Discord: discord.js
 - Slack: @slack/bolt (Socket Mode)
 - HTTP: Hono
@@ -64,6 +64,7 @@ QNAP NAS (Container Station) 上の Docker Compose で一発起動。
 | `src/platforms/parse-topic.ts` | `docs/design/platforms/discord.md` (リポジトリ解決セクション) |
 | `src/platforms/discord.ts` | `docs/design/platforms/discord.md` |
 | `src/platforms/slack.ts` | `docs/design/platforms/slack.md` |
+| `src/agents/aider.ts` | `docs/design/agents/aider.md` |
 | `src/agents/opencode.ts` | `docs/design/agents/opencode.md` |
 | `src/agents/claude-code.ts` | `docs/design/agents/claude-code.md` |
 | `docker-compose.yml` / `Dockerfile` | `docs/design/infrastructure.md` |
@@ -91,7 +92,8 @@ src/
 │   ├── discord.ts        # Discord Platform Adapter
 │   └── slack.ts          # Slack Platform Adapter
 └── agents/
-    ├── opencode.ts       # OpenCode Agent Adapter
+    ├── aider.ts          # Aider Agent Adapter (デフォルト)
+    ├── opencode.ts       # OpenCode Agent Adapter (ARM64 非対応)
     └── claude-code.ts    # Claude Code Agent Adapter
 
 tests/

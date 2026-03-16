@@ -16,6 +16,7 @@ class AiderAgentProcess implements AgentProcess {
   constructor(
     private readonly cwd: string,
     private readonly model: string,
+    private readonly systemPrompt: string,
   ) {}
 
   async createSession(_opts?: { cwd?: string }): Promise<string> {
@@ -35,11 +36,12 @@ class AiderAgentProcess implements AgentProcess {
     const isFirst = this.firstPrompt.get(sessionId) ?? true
     this.firstPrompt.set(sessionId, false)
 
+    const fullMessage = this.systemPrompt ? `${this.systemPrompt}\n\n${content}` : content
     const args = [
       "--model",
       this.model,
       "--message",
-      content,
+      fullMessage,
       "--yes",
       "--no-auto-commits",
       "--no-dirty-commits",
@@ -116,13 +118,23 @@ class AiderAgentProcess implements AgentProcess {
 function isAiderStatusLine(line: string): boolean {
   const trimmed = line.trim()
   if (trimmed === "") return true
+  if (trimmed === "output") return true
   if (trimmed.startsWith("Aider v")) return true
   if (trimmed.startsWith("Main model:")) return true
+  if (trimmed.startsWith("Weak model:")) return true
+  if (trimmed.startsWith("Editor model:")) return true
   if (trimmed.startsWith("Git repo:")) return true
   if (trimmed.startsWith("Repo-map:")) return true
   if (trimmed.startsWith("Use /help")) return true
   if (trimmed.startsWith("Tokens:")) return true
   if (trimmed.startsWith("Cost:")) return true
+  if (trimmed.startsWith("Added ") && trimmed.endsWith("to the chat")) return true
+  if (trimmed.startsWith("Added .aider")) return true
+  if (trimmed.startsWith("Update git ")) return true
+  if (trimmed.startsWith("You can skip this check")) return true
+  if (trimmed.startsWith("https://aider.chat/")) return true
+  if (trimmed.startsWith("Model:")) return true
+  if (trimmed.startsWith("API:")) return true
   return false
 }
 
@@ -134,9 +146,11 @@ export class AiderAgent implements Agent {
   name = "aider"
   private processes = new Map<string, AiderAgentProcess>()
   private readonly model: string
+  private readonly systemPrompt: string
 
   constructor() {
     this.model = process.env.AIDER_MODEL ?? "openrouter/anthropic/claude-sonnet-4"
+    this.systemPrompt = process.env.AIDER_SYSTEM_PROMPT ?? "必ず日本語で回答してください。"
   }
 
   async startProcess(repoPath: string): Promise<AgentProcess> {
@@ -145,7 +159,7 @@ export class AiderAgent implements Agent {
       return existing
     }
 
-    const agentProcess = new AiderAgentProcess(repoPath, this.model)
+    const agentProcess = new AiderAgentProcess(repoPath, this.model, this.systemPrompt)
     this.processes.set(repoPath, agentProcess)
     return agentProcess
   }

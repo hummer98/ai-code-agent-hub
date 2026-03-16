@@ -149,7 +149,7 @@ export class AiderAgent implements Agent {
   private readonly systemPrompt: string
 
   constructor() {
-    this.model = process.env.AIDER_MODEL ?? "openrouter/anthropic/claude-sonnet-4"
+    this.model = process.env.AIDER_MODEL ?? "openrouter/anthropic/claude-sonnet-4.6"
     this.systemPrompt = process.env.AIDER_SYSTEM_PROMPT ?? "必ず日本語で回答してください。"
   }
 

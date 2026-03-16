@@ -26,7 +26,7 @@ const agentProcess = new AiderAgentProcess(repoPath, model)
 
 // prompt() の度に aider CLI を one-shot 起動
 const child = spawn("aider", [
-  "--model", "openrouter/anthropic/claude-sonnet-4",
+  "--model", "openrouter/anthropic/claude-sonnet-4.6",
   "--message", content,
   "--yes",
   "--no-auto-commits",
@@ -59,7 +59,7 @@ Aider は `--restore-chat-history` フラグで `.aider.chat.history.md` から�
 
 ## LLM プロバイダ
 
-環境変数 `OPENROUTER_API_KEY` + モデル名 `openrouter/anthropic/claude-sonnet-4` で OpenRouter 経由。
+環境変数 `OPENROUTER_API_KEY` + モデル名 `openrouter/anthropic/claude-sonnet-4.6` で OpenRouter 経由。
 `AIDER_MODEL` 環境変数でモデルを変更可能。
 
 ## Dockerfile

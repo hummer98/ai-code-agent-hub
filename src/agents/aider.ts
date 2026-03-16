@@ -162,22 +162,29 @@ const RECOMMENDED_MODELS = [
   { id: "openrouter/anthropic/claude-sonnet-4.6", description: "高品質・バランス (Anthropic)" },
   { id: "openrouter/anthropic/claude-haiku-4.5", description: "高速・低コスト (Anthropic)" },
   // OpenAI
-  { id: "openrouter/openai/gpt-4.1", description: "高品質 (OpenAI)" },
-  { id: "openrouter/openai/gpt-4.1-mini", description: "高速・低コスト (OpenAI)" },
+  { id: "openrouter/openai/gpt-5.4-pro", description: "最高品質 (OpenAI)" },
+  { id: "openrouter/openai/gpt-5.4", description: "高品質 (OpenAI)" },
+  { id: "openrouter/openai/gpt-5.3-chat", description: "バランス (OpenAI)" },
   // Google
-  { id: "openrouter/google/gemini-2.5-pro", description: "高品質・1Mコンテキスト (Google)" },
-  { id: "openrouter/google/gemini-2.5-flash", description: "高速・低コスト (Google)" },
+  { id: "openrouter/google/gemini-3.1-pro-preview", description: "最新・高品質 (Google)" },
+  { id: "openrouter/google/gemini-3.1-flash-lite-preview", description: "最新・高速 (Google)" },
+  { id: "openrouter/google/gemini-2.5-pro", description: "安定版・1Mコンテキスト (Google)" },
+  { id: "openrouter/google/gemini-2.5-flash", description: "安定版・低コスト (Google)" },
   // DeepSeek
   { id: "openrouter/deepseek/deepseek-v3.2", description: "最安・コーディング◎ (DeepSeek)" },
   { id: "openrouter/deepseek/deepseek-r1", description: "推論特化 (DeepSeek)" },
   // Qwen
+  { id: "openrouter/qwen/qwen3.5-397b-a17b", description: "最大・最高品質 (Alibaba)" },
   { id: "openrouter/qwen/qwen3.5-plus-02-15", description: "高品質 (Alibaba)" },
   { id: "openrouter/qwen/qwen3-coder-next", description: "コーディング特化 (Alibaba)" },
   // Moonshot
   { id: "openrouter/moonshotai/kimi-k2.5", description: "コーディング◎ (Moonshot)" },
   // Zhipu
-  { id: "openrouter/z-ai/glm-5", description: "最新フラッグシップ (Zhipu)" },
-  { id: "openrouter/z-ai/glm-4.7-flash", description: "高速・低コスト (Zhipu)" },
+  { id: "openrouter/z-ai/glm-5", description: "フラッグシップ (Zhipu)" },
+  { id: "openrouter/z-ai/glm-5-turbo", description: "高速 (Zhipu)" },
+  // Mistral
+  { id: "openrouter/mistralai/mistral-large-2512", description: "最新フラッグシップ (Mistral)" },
+  { id: "openrouter/mistralai/devstral-2512", description: "コーディング特化 (Mistral)" },
 ] as const
 
 interface ParsedCommand {

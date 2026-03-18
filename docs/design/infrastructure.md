@@ -88,7 +88,8 @@ bind mount の利点:
 | `SLACK_BOT_TOKEN` | △ | Slack Bot User OAuth Token (Slack 連携時) |
 | `SLACK_APP_TOKEN` | △ | Slack App-Level Token (Socket Mode 用) |
 | `AGENT` | - | 使用する Agent 名 (`aider`, `opencode`, `claude-code`。デフォルト: `aider`) |
-| `AIDER_MODEL` | - | Aider で使用するモデル (デフォルト: `openrouter/anthropic/claude-sonnet-4`) |
+| `AIDER_MODEL` | - | Aider で使用するモデル (デフォルト: `openrouter/anthropic/claude-sonnet-4.6`) |
+| `AIDER_SYSTEM_PROMPT` | - | Aider のシステムプロンプト (デフォルト: `必ず日本語で回答してください。`) |
 | `OPENROUTER_API_KEY` | △ | OpenRouter API キー (Aider Agent 使用時) |
 | `ANTHROPIC_API_KEY` | △ | Anthropic API キー (Claude Code Agent 使用時) |
 | `OPENAI_API_KEY` | △ | OpenAI API キー |

@@ -8,6 +8,7 @@
 | `Agent` | `src/types.ts` | AI エンジン層の抽象。OpenCode や Claude Code など AI コーディングエージェントのプロセス管理を担う |
 | `AgentProcess` | `src/types.ts` | 1 リポジトリに対して起動された Agent プロセスのラッパー。セッションの作成・プロンプト送信を提供する。`resumeSession()` は no-op (opencode がセッションを永続化するため不要) |
 | `IncomingMessage` | `src/types.ts` | Platform から Router に渡される正規化されたメッセージ。プラットフォーム固有の情報を共通形式に変換したもの |
+| `ReplyPayload` | `src/types.ts` | Platform.reply() に渡すリッチ応答。テキスト + セレクトメニュー等の UI コンポーネントを含む |
 
 ## クラス
 
@@ -20,7 +21,7 @@
 | `DiscordPlatform` | `src/platforms/discord.ts` | Discord Gateway (WebSocket) を介してメッセージを送受信する Platform 実装 |
 | `SlackPlatform` | `src/platforms/slack.ts` | Slack Socket Mode (WebSocket) を介してメッセージを送受信する Platform 実装 |
 | `AiderAgent` | `src/agents/aider.ts` | Aider CLI (`aider`) を `--message` モードで起動する Agent 実装 (デフォルト)。repoPath 単位で `AiderAgentProcess` を管理する |
-| `AiderAgentProcess` | `src/agents/aider.ts` | Aider CLI の AgentProcess 実装。`prompt()` 毎に `aider --message --yes --no-auto-commits` を spawn し、stdout からテキストを yield する。`--restore-chat-history` で会話コンテキストを維持する |
+| `AiderAgentProcess` | `src/agents/aider.ts` | Aider CLI の AgentProcess 実装。`prompt()` 毎に `aider --message --yes --no-auto-commits` を spawn し、stdout からテキストを yield する。`--restore-chat-history` で会話コンテキストを維持。`!model`/`!models`/`!help` コマンドを内部処理する |
 | `OpenCodeAgent` | `src/agents/opencode.ts` | OpenCode CLI (`opencode`) を `-p` モードで起動する Agent 実装。ARM64 QNAP では動作不可 (将来用) |
 | `ClaudeCodeAgent` | `src/agents/claude-code.ts` | Claude Code CLI (`claude`) をサブプロセスとして起動する Agent 実装。repoPath 単位で `ClaudeCodeAgentProcess` を管理する |
 | `ClaudeCodeAgentProcess` | `src/agents/claude-code.ts` | Claude Code CLI の AgentProcess 実装。`prompt()` 毎に `claude -p --session-id --output-format stream-json` を spawn し、stdout の JSON Lines からテキストを yield する |
@@ -51,6 +52,9 @@
 | シンボル | 定義場所 | 意味 |
 |---------|---------|------|
 | `parseRepoFromTopic` | `src/platforms/parse-topic.ts` | チャンネルトピック文字列から `repo:owner/name` を抽出し、`owner/name` を返すパーサー。Discord/Slack の両 Platform から共有利用 |
+| `parseCommand` | `src/agents/aider.ts` | `!command arg` 形式のコマンドをパースする。`!model`, `!models`, `!help` を認識 |
+| `isAiderStatusLine` | `src/agents/aider.ts` | Aider CLI のステータス出力行を判定し、LLM 応答のみを抽出するフィルター |
+| `RECOMMENDED_MODELS` | `src/agents/aider.ts` | Discord `!models` コマンドで表示するおすすめモデルの定義配列 (8プロバイダ 20+ モデル) |
 | `AgentPool.ensureCloned` | `src/agent-pool.ts` | repoPath が存在しなければ GitHub から `git clone` を実行する。同一リポジトリへの重複 clone を Promise キャッシュで防止する |
 | `AgentPool.buildCloneUrl` | `src/agent-pool.ts` | (static) repoName と任意の GITHUB_TOKEN から clone URL を生成する。トークンありなら `https://{token}@github.com/{repo}.git` |
 | `AgentPool.pathExists` | `src/agent-pool.ts` | (static) 指定パスの存在チェック。`fs.access` のラッパー。テストでモック可能にするために static メソッドとして公開 |
@@ -60,7 +64,8 @@
 | シンボル | 意味 |
 |---------|------|
 | `AGENT` | 使用する Agent 名 (`aider`, `opencode`, `claude-code`。デフォルト: `aider`) |
-| `AIDER_MODEL` | Aider で使用するモデル (デフォルト: `openrouter/anthropic/claude-sonnet-4`) |
+| `AIDER_MODEL` | Aider で使用するモデル (デフォルト: `openrouter/anthropic/claude-sonnet-4.6`) |
+| `AIDER_SYSTEM_PROMPT` | Aider のシステムプロンプト (デフォルト: `必ず日本語で回答してください。`) |
 | `OPENROUTER_API_KEY` | OpenRouter API キー (Aider Agent 使用時) |
 | `DISCORD_TOKEN` | Discord Bot トークン |
 | `DISCORD_CATEGORY_ID` | 監視対象の Discord カテゴリ ID |

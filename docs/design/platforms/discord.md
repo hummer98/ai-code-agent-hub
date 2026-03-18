@@ -62,6 +62,32 @@ Slash Commands ではなく `@bot` メンション + スレッド返信を採用
 - `startThread()`: `message.startThread({ name })` で Discord スレッドを作成
 - `reply()`: スレッド内にメッセージを送信
 
+## リッチ応答 (ReplyPayload)
+
+`reply()` は `string | ReplyPayload` を受け取る。`ReplyPayload` にはテキストに加えてセレクトメニュー等の UI コンポーネントを含められる。
+
+```typescript
+// ReplyPayload でセレクトメニューを送信
+await channel.send({
+  content: payload.text,
+  components: [
+    new ActionRowBuilder().addComponents(
+      new StringSelectMenuBuilder()
+        .setCustomId(payload.select.id)
+        .setPlaceholder(payload.select.placeholder)
+        .addOptions(payload.select.options)  // 最大25件
+    )
+  ]
+})
+```
+
+## インタラクションハンドラー
+
+`interactionCreate` イベントで Discord UI コンポーネントの操作を処理する。
+
+- `model_select` セレクトメニュー: ユーザーの選択を `!model <value>` コマンドとして内部的にメッセージハンドラーに送信
+- `menu.deferUpdate()` で Discord の 3 秒タイムアウトに対応
+
 ## チャンネルナビゲーション (FR-013)
 
 新規チャンネル作成時にセットアップ案内メッセージを自動投稿する。
@@ -91,4 +117,4 @@ Slash Commands ではなく `@bot` メンション + スレッド返信を採用
 
 ## 見積もり
 
-~80行
+~160行
